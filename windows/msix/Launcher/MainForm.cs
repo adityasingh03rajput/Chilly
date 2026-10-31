@@ -21,6 +21,7 @@ internal sealed class MainForm : Form
     private bool _allowClose;
     private readonly EventWaitHandle _activateEvent;
     private RegisteredWaitHandle? _activateWaitHandle;
+    private Process? _embeddedWebProcess;
 
     public MainForm(EventWaitHandle activateEvent)
     {
@@ -66,10 +67,51 @@ internal sealed class MainForm : Form
             // orphaning the child processes.
             _tray?.Dispose();
             _supervisor?.Dispose();
+            if (_embeddedWebProcess is not null && !_embeddedWebProcess.HasExited) { try { _embeddedWebProcess.Kill(entireProcessTree: true); } catch { } _embeddedWebProcess.Dispose(); }
         }
         base.Dispose(disposing);
     }
 
+    
+    private async Task<bool> StartBundledWebServerAsync(string nodeExe, string serverJs)
+    {
+        ShowStatus("Starting local restaurant UI…");
+        var webDir = Path.Combine(AppContext.BaseDirectory, "web");
+        var psi = new ProcessStartInfo
+        {
+            FileName = nodeExe,
+            Arguments = $"\"{serverJs}\"",
+            WorkingDirectory = webDir,
+            UseShellExecute = false,
+            CreateNoWindow = true,
+            WindowStyle = ProcessWindowStyle.Hidden,
+        };
+        psi.Environment["PORT"] = "1995";
+        psi.Environment["HOSTNAME"] = "127.0.0.1";
+        psi.Environment["NODE_ENV"] = "production";
+
+        try
+        {
+            _embeddedWebProcess = Process.Start(psi);
+            using var client = new HttpClient { Timeout = TimeSpan.FromSeconds(2) };
+            for (int i = 0; i < 30; i++)
+            {
+                try
+                {
+                    var res = await client.GetAsync("http://127.0.0.1:1995/");
+                    if (res.IsSuccessStatusCode) return true;
+                }
+                catch { }
+                await Task.Delay(300);
+            }
+            return true;
+        }
+        catch (Exception ex)
+        {
+            ShowFatalError($"Failed to launch local interface: {ex.Message}");
+            return false;
+        }
+    }
     private void BuildMenu()
     {
         var menu = new MenuStrip();
@@ -108,7 +150,19 @@ internal sealed class MainForm : Form
 
     private async Task InitializeAsync()
     {
-        if (string.IsNullOrWhiteSpace(_config.Mode))
+        var bundledNode = Path.Combine(AppContext.BaseDirectory, "node", "node.exe");
+        var bundledWebServer = Path.Combine(AppContext.BaseDirectory, "web", "apps", "web", "server.js");
+
+        if (File.Exists(bundledNode) && File.Exists(bundledWebServer))
+        {
+            _config.ServerUrl = "http://localhost:1995";
+            _config.Mode = "bundled";
+            if (!await StartBundledWebServerAsync(bundledNode, bundledWebServer))
+            {
+                return;
+            }
+        }
+        else if (string.IsNullOrWhiteSpace(_config.Mode))
         {
             using var choiceDialog = new FirstRunChoiceForm();
             var choiceResult = choiceDialog.ShowDialog(this);
