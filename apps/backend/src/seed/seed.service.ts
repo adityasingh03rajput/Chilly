@@ -113,9 +113,27 @@ export class SeedService implements OnApplicationBootstrap {
     const pinHash = await bcrypt.hash('1234', 12);
     const ownerRoleId = roleByName.get('OWNER')!;
 
+    // Remove any conflicting users in non-demo restaurants with these emails
+    const demoEmails = [
+      'owner@demo.com',
+      'owner@demo.local',
+      'admin@demo.com',
+      'manager@demo.com',
+      'cashier@demo.com',
+      'waiter@demo.com',
+      'chef@demo.com',
+    ];
+    await this.prisma.user.deleteMany({
+      where: {
+        restaurantId: { not: restaurant.id },
+        email: { in: demoEmails },
+      },
+    });
+
     const usersToCreate = [
       { name: 'Demo Owner', email: 'owner@demo.com', roleId: ownerRoleId },
       { name: 'Demo Owner', email: 'owner@demo.local', roleId: ownerRoleId },
+      { name: 'Demo Admin', email: 'admin@demo.com', roleId: ownerRoleId },
       { name: 'Demo Manager', email: 'manager@demo.com', roleId: roleByName.get('RESTAURANT_MANAGER') ?? ownerRoleId },
       { name: 'Demo Cashier', email: 'cashier@demo.com', roleId: roleByName.get('CASHIER') ?? ownerRoleId },
       { name: 'Demo Waiter', email: 'waiter@demo.com', roleId: roleByName.get('WAITER') ?? ownerRoleId },
@@ -141,10 +159,11 @@ export class SeedService implements OnApplicationBootstrap {
         },
       });
 
-      await this.prisma.userBranch.upsert({
-        where: { userId_branchId: { userId: user.id, branchId: branch.id } },
-        update: {},
-        create: { userId: user.id, branchId: branch.id },
+      await this.prisma.userBranch.deleteMany({
+        where: { userId: user.id },
+      });
+      await this.prisma.userBranch.create({
+        data: { userId: user.id, branchId: branch.id },
       });
     }
 
@@ -468,3 +487,4 @@ export class SeedService implements OnApplicationBootstrap {
     return { status: 'ok', message: 'Demo restaurant and sample data successfully seeded.' };
   }
 }
+
