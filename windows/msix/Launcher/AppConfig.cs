@@ -115,7 +115,7 @@ internal sealed class AppConfig
             return false;
         }
 
-        if (uri.IsDefaultPort)
+        if (uri.IsDefaultPort && uri.Scheme == Uri.UriSchemeHttp)
         {
             uri = new UriBuilder(uri) { Port = DefaultServerPort }.Uri;
         }
