@@ -11,8 +11,8 @@ services:
     # internal Docker network. Uncomment `ports` below for local psql access.
     expose:
       - "5432"
-    # ports:
-    #   - "5432:5432"
+    ports:
+      - "5432:5432"
     volumes:
       - pg_data:/var/lib/postgresql/data
     healthcheck:

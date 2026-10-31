@@ -5,7 +5,7 @@
   "author": "Raktim Ranjit <mail@raktimranjit.com> (https://github.com/Raktim94)",
   "license": "AGPL-3.0-only",
   "scripts": {
-    "dev": "next dev",
+    "dev": "next dev -p 1995",
     "build": "next build",
     "start": "next start",
     "typecheck": "tsc --noEmit",
