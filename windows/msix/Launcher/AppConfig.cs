@@ -11,7 +11,7 @@ namespace OrderRestro.Launcher;
 /// </summary>
 internal sealed class AppConfig
 {
-    public string? ServerUrl { get; set; }
+    public string? ServerUrl { get; set; } = "https://richpic.onrender.com";
 
     // "embedded" (this PC runs the server, ServerUrl is always
     // localhost:1995 and never user-editable) or null/anything else

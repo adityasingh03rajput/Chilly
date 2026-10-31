@@ -57,7 +57,7 @@ internal sealed class ServerSettingsForm : Form
         {
             Location = new Point(20, 88),
             Size = new Size(420, 24),
-            Text = currentUrl ?? string.Empty,
+            Text = string.IsNullOrWhiteSpace(currentUrl) ? "https://richpic.onrender.com" : currentUrl,
             Font = new Font("Segoe UI", 10f),
         };
         SetCueBanner(_urlBox, "e.g. 192.168.1.50 or 192.168.1.50:1995");

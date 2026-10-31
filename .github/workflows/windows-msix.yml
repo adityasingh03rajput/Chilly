@@ -10,7 +10,7 @@ name: Windows MSIX build
 
 on:
   push:
-    branches: [master]
+    branches: [master, main]
     paths:
       - 'windows/**'
       - '.github/workflows/windows-msix.yml'
@@ -521,6 +521,14 @@ jobs:
           [xml]$manifest = Get-Content ./AppxManifest.xml
           $pkg = Get-AppxPackage -Name $manifest.Package.Identity.Name -ErrorAction SilentlyContinue
           if ($pkg) { Remove-AppxPackage -Package $pkg.PackageFullName }
+
+      - name: Upload portable OrderRestro.exe folder
+        if: always()
+        uses: actions/upload-artifact@v7
+        with:
+          name: OrderRestro-portable-exe
+          path: windows/msix/out/publish/
+          if-no-files-found: warn
 
       - name: Upload embedded-server MSIX artifact
         if: always()
